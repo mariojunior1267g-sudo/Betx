@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>BetX Blaze Simulador</title>
+<style>
+:root {
+  --neon: #00ffcc;
+  --bg: #0b0f1a;
+  --card: #151a2e;
+  --accent: #ff0055;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: var(--bg);
+  color: #fff;
+}
+
+header {
+  text-align: center;
+  padding: 20px;
+  background: linear-gradient(90deg, #00ffcc, #0066ff);
+  color: #000;
+}
+
+.saldo {
+  text-align: center;
+  margin: 15px;
+  padding: 15px;
+  background: var(--card);
+  border-radius: 12px;
+  box-shadow: 0 0 15px #00ffcc33;
+  font-size: 18px;
+}
+
+section {
+  padding: 20px;
+}
+
+h2 {
+  margin-bottom: 10px;
+}
+
+/* BOTÕES */
+button {
+  background: var(--neon);
+  border: none;
+  padding: 10px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: bold;
+  margin-top: 10px;
+  margin-right: 5px;
+  transition: 0.2s;
+}
+
+button:hover {
+  transform: scale(1.05);
+}
+
+/* CARTÕES DE JOGOS */
+.card {
+  background: var(--card);
+  padding: 15px;
+  border-radius: 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 0 10px #00ffcc33;
+}
+
+/* FOguetinho */
+#foguetinho {
+  text-align: center;
+  margin-top: 15px;
+  font-size: 24px;
+}
+
+/* MINES */
+#mines {
+  display: grid;
+  grid-template-columns: repeat(5, 50px);
+  gap: 5px;
+  justify-content: center;
+  margin-top: 15px;
+}
+
+.mineCell {
+  width: 50px;
+  height: 50px;
+  background: var(--card);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-weight: bold;
+  color: var(--neon);
+  font-size: 18px;
+  transition: 0.2s;
+}
+
+.mineCell:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 8px #00ffcc44;
+}
+
+/* RANKING */
+.ranking {
+  background: var(--card);
+  border-radius: 14px;
+  padding: 15px;
+  margin-top: 15px;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>BetX Blaze Simulador</h1>
+  <p>Foguetinho 🚀 • Mines 💣 • Moedas Virtuais 💰</p>
+</header>
+
+<div class="saldo">
+💰 Saldo: <span id="saldo">1000</span> moedas
+</div>
+
+<section class="card">
+<h2>🚀 Foguetinho / Crash</h2>
+<button onclick="startFoguetinho()">Apostar 100 moedas</button>
+<div id="foguetinho">Multiplicador: 1.00x</div>
+</section>
+
+<section class="card">
+<h2>💣 Mines</h2>
+<button onclick="startMines()">Iniciar Mines (100 moedas)</button>
+<div id="mines"></div>
+</section>
+
+<section class="card">
+<h2>🏆 Ranking Local</h2>
+<div class="ranking">
+<p>Você — <span id="rankingSaldo">1000</span> moedas</p>
+</div>
+</section>
+
+<footer style="text-align:center;padding:12px;font-size:12px;opacity:0.6;">
+Projeto educacional • 100% legal • Sem dinheiro real
+</footer>
+
+<script>
+let saldo = localStorage.getItem("saldo") ? Number(localStorage.getItem("saldo")) : 1000;
+atualizarTela();
+
+/* --------------------- FOguetinho --------------------- */
+let fogueteInterval;
+let fogueteMultiplier;
+
+function startFoguetinho() {
+  const aposta = 100;
+  if (saldo < aposta) { alert("Saldo insuficiente!"); return; }
+  saldo -= aposta;
+  salvar();
+
+  fogueteMultiplier = 1;
+  const crashPoint = Math.random() * 10 + 1; // ponto de crash aleatório
+  document.getElementById("foguetinho").innerText = `Multiplicador: 1.00x`;
+
+  fogueteInterval = setInterval(() => {
+    fogueteMultiplier += 0.1;
+    document.getElementById("foguetinho").innerText = `Multiplicador: ${fogueteMultiplier.toFixed(2)}x`;
+    if (fogueteMultiplier >= crashPoint) {
+      clearInterval(fogueteInterval);
+      alert(`💥 Crash! Você perdeu a aposta de 100 moedas.`);
+      atualizarTela();
+    }
+  }, 200);
+
+  // Clique para retirar
+  document.getElementById("foguetinho").onclick = () => {
+    clearInterval(fogueteInterval);
+    const ganho = aposta * fogueteMultiplier;
+    saldo += ganho;
+    alert(`🎉 Você retirou a aposta! Ganhou ${ganho.toFixed(0)} moedas.`);
+    document.getElementById("foguetinho").onclick = null;
+    salvar();
+    atualizarTela();
+  };
+}
+
+/* --------------------- MINES --------------------- */
+let minesGrid = [];
+const rows = 5;
+const minesCount = 5;
+function startMines() {
+  const aposta = 100;
+  if (saldo < aposta) { alert("Saldo insuficiente!"); return; }
+  saldo -= aposta;
+  salvar();
+
+  // Criar grid
+  minesGrid = [];
+  const minePositions = [];
+  while(minePositions.length < minesCount){
+    const pos = Math.floor(Math.random()*rows*rows);
+    if(!minePositions.includes(pos)) minePositions.push(pos);
+  }
+
+  const container = document.getElementById("mines");
+  container.innerHTML = "";
+  for(let i=0;i<rows*rows;i++){
+    const cell = document.createElement("div");
+    cell.classList.add("mineCell");
+    cell.dataset.mine = minePositions.includes(i);
+    cell.dataset.clicked = false;
+    cell.innerText = "?";
+    cell.onclick = () => clickMine(cell, aposta);
+    container.appendChild(cell);
+  }
+}
+
+function clickMine(cell, aposta) {
+  if(cell.dataset.clicked=="true") return;
+  cell.dataset.clicked="true";
+
+  if(cell.dataset.mine=="true"){
+    cell.innerText = "💣";
+    alert("💥 Explodiu! Você perdeu a aposta de 100 moedas.");
+    atualizarTela();
+    return;
+  } else {
+    cell.innerText = "✅";
+    saldo += aposta * 0.2; // ganha 20% da aposta por acerto
+    salvar();
+    atualizarTela();
+  }
+}
+
+/* --------------------- FUNÇÕES AUX --------------------- */
+function salvar(){
+  localStorage.setItem("saldo", saldo);
+}
+
+function atualizarTela(){
+  document.getElementById("saldo").innerText = saldo.toFixed(0);
+  document.getElementById("rankingSaldo").innerText = saldo.toFixed(0);
+}
+</script>
+</body>
+</html>
